@@ -19,15 +19,25 @@ export default function ImagePreview({
   error,
   onReset,
 }: ImagePreviewProps) {
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!finalImage) return;
 
-    const link = document.createElement("a");
-    link.href = finalImage;
-    link.download = "arcane-style-image.png";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const response = await fetch(finalImage);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "conclave-poster.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed:", err);
+      // Fallback: try opening in new tab
+      window.open(finalImage, "_blank");
+    }
   };
 
   const handleShare = async () => {
