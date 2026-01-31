@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upload to Blob if token is available
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      console.log('Uploading input to Vercel Blob...');
+    // Upload to Blob only in development or if explicitly disabled for production speed
+    if (process.env.BLOB_READ_WRITE_TOKEN && !isProduction) {
+      console.log('Uploading input to Vercel Blob (Dev Only)...');
       const blob = await put(`uploads/${filename}`, buffer, {
         access: 'public',
         contentType: image.type,
@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       throw new Error('OPENROUTER_API_KEY not configured');
     }
 
+    console.time('OpenRouter_AI_Call');
     const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -102,11 +103,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!apiResponse.ok) {
+      console.timeEnd('OpenRouter_AI_Call');
       const errorData = await apiResponse.json();
       throw new Error(`OpenRouter Error: ${apiResponse.status}`);
     }
 
     const result = await apiResponse.json();
+    console.timeEnd('OpenRouter_AI_Call');
     const responseMessage = result.choices[0].message;
     let generatedImageUrl: string | undefined = responseMessage.images?.[0]?.image_url?.url;
 
@@ -144,7 +147,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    // Upload to Blob only in development or if explicitly disabled for production speed
+    if (process.env.BLOB_READ_WRITE_TOKEN && !isProduction) {
+      console.log('Uploading generated image to Vercel Blob (Dev Only)...');
       const blob = await put(`generated/${generatedFilename}`, imageBuffer, {
         access: 'public',
         contentType: 'image/png',

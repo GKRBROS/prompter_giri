@@ -137,7 +137,7 @@ export async function mergeImages(
               ${fontBase64Cache ? `
               @font-face {
                 font-family: "Cal Sans";
-                src: url("data:font/ttf;base64,${fontBase64Cache}");
+                src: url("data:application/x-font-ttf;base64,${fontBase64Cache}");
               }
               ` : ''}
               .name {
@@ -183,23 +183,25 @@ export async function mergeImages(
     const timestamp_str = timestamp.toString();
     const outputFilename = `final-${timestamp_str}.png`;
 
-    // Save final image locally if possible (mandatory for local, optional for prod)
-    try {
-      const outputPath = join(outputDir, outputFilename);
-      await writeFile(outputPath, finalBuffer);
-      console.log('Final image saved locally:', outputPath);
-    } catch (err) {
-      console.warn('Could not save final image locally (likely Vercel read-only FS):', err);
-      // If we're in prod and have blob, this is fine. If not, we might have an issue.
+    // Save final image locally only in development
+    if (!isProduction) {
+      try {
+        const outputPath = join(outputDir, outputFilename);
+        await writeFile(outputPath, finalBuffer);
+        console.log('Final image saved locally:', outputPath);
+      } catch (err) {
+        console.warn('Could not save final image locally:', err);
+      }
     }
 
     // Upload to Vercel Blob if token is available
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-      console.log('Uploading to Vercel Blob...');
+      console.time('Vercel_Blob_Upload_Final');
       const blob = await put(`posters/${outputFilename}`, finalBuffer, {
         access: 'public',
         contentType: 'image/png',
       });
+      console.timeEnd('Vercel_Blob_Upload_Final');
       console.log('Uploaded to Vercel Blob:', blob.url);
       return blob.url;
     }
