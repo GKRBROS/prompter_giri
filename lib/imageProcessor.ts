@@ -1,7 +1,9 @@
 import sharp from 'sharp';
 import { join } from 'path';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, readFile } from 'fs/promises';
 import { put } from '@vercel/blob';
+
+let fontBase64Cache: string | null = null;
 
 export async function mergeImages(
   generatedImagePath: string,
@@ -113,16 +115,28 @@ export async function mergeImages(
       const nameY = Math.floor(svgHeight * 0.752);
       const desY = Math.floor(svgHeight * 0.784);
 
-      const fontPath = join(process.cwd(), 'public', 'CalSans-SemiBold.ttf').replace(/\\/g, '/');
+      // Load font if not cached
+      if (!fontBase64Cache) {
+        try {
+          const fontPath = join(process.cwd(), 'public', 'CalSans-SemiBold.ttf');
+          const fontBuffer = await readFile(fontPath);
+          fontBase64Cache = fontBuffer.toString('base64');
+          console.log('Font loaded and cached as Base64');
+        } catch (err) {
+          console.error('Failed to load font for inlining:', err);
+        }
+      }
 
       const svgOverlay = `
         <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
           <defs>
             <style>
+              ${fontBase64Cache ? `
               @font-face {
                 font-family: "Cal Sans";
-                src: url("file://${fontPath}");
+                src: url("data:font/ttf;base64,${fontBase64Cache}");
               }
+              ` : ''}
               .name {
                 fill: #000000;
                 font-family: "Cal Sans", "Impact", "Arial Black", sans-serif;

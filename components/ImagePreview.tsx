@@ -70,6 +70,7 @@ export default function ImagePreview({
                 alt="Original"
                 fill
                 className="object-contain"
+                unoptimized
               />
             </div>
           </div>
@@ -105,6 +106,7 @@ export default function ImagePreview({
                   alt="Generated Arcane Style"
                   fill
                   className="object-contain"
+                  unoptimized
                 />
               </div>
             ) : null}
