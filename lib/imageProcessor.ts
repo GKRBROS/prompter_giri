@@ -12,8 +12,10 @@ export async function mergeImages(
   designation?: string
 ): Promise<string> {
   try {
-    console.log('Merging images - generatedImagePath:', generatedImagePath);
+    console.log('--- MERGE IMAGES DEBUG START ---');
+    console.log('generatedImagePath:', generatedImagePath);
     console.log('Text Overlay:', { name, designation });
+    console.log('Node Env:', process.env.NODE_ENV);
 
     // Create output directory
     const isProduction = process.env.NODE_ENV === 'production';
@@ -131,39 +133,44 @@ export async function mergeImages(
       }
 
       const svgOverlay = `
-        <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
+        <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">
           <defs>
+            ${fontBase64Cache ? `
             <style>
-              ${fontBase64Cache ? `
               @font-face {
                 font-family: "Cal Sans";
                 src: url("data:application/x-font-ttf;base64,${fontBase64Cache}");
               }
-              ` : ''}
-              .name {
-                fill: #000000;
-                font-family: "Cal Sans", "DejaVu Sans", "Arial", sans-serif;
-                font-size: ${Math.max(nameFontSize, 24)}px;
-                font-weight: 800;
-                text-anchor: middle;
-                dominant-baseline: middle;
-              }
-              .designation {
-                fill: #222222;
-                font-family: "Geist", "Inter", "DejaVu Sans", "Arial", sans-serif;
-                font-size: ${Math.max(desFontSize, 18)}px;
-                font-weight: 500;
-                text-anchor: middle;
-                dominant-baseline: middle;
-                letter-spacing: -0.04em;
-              }
             </style>
+            ` : ''}
           </defs>
-          <!-- Name and Designation rendered in white banner with auto-fitting width -->
-          <text x="${svgWidth / 2}" y="${nameY}" class="name" textLength="${nameEstimatedWidth > maxWidth ? maxWidth : ''}" lengthAdjust="spacingAndGlyphs">${nameText}</text>
-          <text x="${svgWidth / 2}" y="${desY}" class="designation" textLength="${desEstimatedWidth > maxWidth ? maxWidth : ''}" lengthAdjust="spacingAndGlyphs">${desText}</text>
+          <text 
+            x="${svgWidth / 2}" 
+            y="${nameY}" 
+            fill="#000000" 
+            font-family="'Cal Sans', 'DejaVu Sans', 'Arial', sans-serif" 
+            font-size="${Math.max(nameFontSize, 24)}" 
+            font-weight="800" 
+            text-anchor="middle" 
+            dominant-baseline="middle"
+            ${nameEstimatedWidth > maxWidth ? `textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"` : ''}
+          >${nameText}</text>
+          <text 
+            x="${svgWidth / 2}" 
+            y="${desY}" 
+            fill="#222222" 
+            font-family="'Geist', 'Inter', 'DejaVu Sans', 'Arial', sans-serif" 
+            font-size="${Math.max(desFontSize, 18)}" 
+            font-weight="500" 
+            text-anchor="middle" 
+            dominant-baseline="middle"
+            letter-spacing="-0.04em"
+            ${desEstimatedWidth > maxWidth ? `textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"` : ''}
+          >${desText}</text>
         </svg>
       `;
+      console.log('SVG Overlay Length:', svgOverlay.length);
+      console.log('SVG Sample:', svgOverlay.substring(0, 300) + '...');
 
       finalCompositeLayers.push({
         input: Buffer.from(svgOverlay),
@@ -206,9 +213,10 @@ export async function mergeImages(
       return blob.url;
     }
 
+    console.log('--- MERGE IMAGES DEBUG END - SUCCESS ---');
     return `/final/${outputFilename}`;
   } catch (error) {
-    console.error('Error merging images:', error);
+    console.error('CRITICAL ERROR in mergeImages:', error);
     throw new Error(`Failed to merge images: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
