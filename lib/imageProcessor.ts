@@ -11,6 +11,20 @@ export async function mergeImages(
   name?: string,
   designation?: string
 ): Promise<string> {
+  // Set FontConfig for Vercel
+  if (process.env.NODE_ENV === 'production') {
+    const fontDir = join(process.cwd(), 'fonts');
+    process.env.FONTCONFIG_PATH = fontDir;
+    process.env.PANGOCAIRO_BACKEND = 'fontconfig';
+    console.log(`Setting FONTCONFIG_PATH to: ${fontDir}`);
+
+    // Ensure cache dir exists
+    const cacheDir = '/tmp/fonts-cache';
+    try {
+      await mkdir(cacheDir, { recursive: true });
+    } catch (e) { }
+  }
+
   try {
     console.log('--- MERGE IMAGES DEBUG START ---');
     console.log('generatedImagePath:', generatedImagePath);

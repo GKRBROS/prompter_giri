@@ -4,6 +4,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    outputFileTracingIncludes: {
+      '/api/**/*': ['./fonts/**/*'],
+    },
   },
   images: {
     remotePatterns: [

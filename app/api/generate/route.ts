@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
       throw new Error('OPENROUTER_API_KEY not configured');
     }
 
+    // Call OpenRouter
+    console.log('Sending prompt to OpenRouter:', prompt.substring(0, 100) + '...');
     console.time('OpenRouter_AI_Call');
     const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
             ],
           },
         ],
-        modalities: ['image']
+        modalities: ['image', 'text']
       }),
     });
 
