@@ -9,6 +9,7 @@ import sharp from 'sharp';
 export const maxDuration = 60; // Increase timeout for long AI generation
 
 export async function POST(request: NextRequest) {
+  const isProduction = process.env.NODE_ENV === 'production';
   try {
     const formData = await request.formData();
     const image = formData.get('image') as File;
@@ -29,8 +30,6 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const filename = `upload-${timestamp}.${image.name.split('.').pop()}`;
 
-    // Define paths
-    const isProduction = process.env.NODE_ENV === 'production';
     const tmpUploadsPath = join('/tmp', 'uploads');
     const publicUploadsPath = join(process.cwd(), 'public', 'uploads');
 
@@ -164,9 +163,15 @@ export async function POST(request: NextRequest) {
       finalImage: finalImagePath,
     });
   } catch (error: any) {
-    console.error('Error generating image:', error);
+    console.error('CRITICAL ERROR during generation:', error);
+    // Log stack trace for Vercel logs
+    if (error.stack) console.error(error.stack);
+
     return NextResponse.json(
-      { error: error?.message || 'Failed to generate image' },
+      {
+        error: error?.message || 'Internal Server Error',
+        details: isProduction ? undefined : error?.stack
+      },
       { status: 500 }
     );
   }

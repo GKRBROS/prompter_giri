@@ -118,12 +118,15 @@ export async function mergeImages(
       // Load font if not cached
       if (!fontBase64Cache) {
         try {
+          // Explicit path resolution for Vercel and Local
           const fontPath = join(process.cwd(), 'public', 'CalSans-SemiBold.ttf');
+          console.log(`Attempting to load font from: ${fontPath}`);
           const fontBuffer = await readFile(fontPath);
           fontBase64Cache = fontBuffer.toString('base64');
-          console.log('Font loaded and cached as Base64');
+          console.log('Font successfully loaded and cached as Base64 (Size:', fontBuffer.length, 'bytes)');
         } catch (err) {
-          console.error('Failed to load font for inlining:', err);
+          console.error('CRITICAL: Failed to load font for inlining:', err);
+          // Don't throw, but text might look different
         }
       }
 
@@ -139,7 +142,7 @@ export async function mergeImages(
               ` : ''}
               .name {
                 fill: #000000;
-                font-family: "Cal Sans", "Impact", "Arial Black", sans-serif;
+                font-family: "Cal Sans", "DejaVu Sans", "Arial", sans-serif;
                 font-size: ${Math.max(nameFontSize, 24)}px;
                 font-weight: 800;
                 text-anchor: middle;
@@ -147,7 +150,7 @@ export async function mergeImages(
               }
               .designation {
                 fill: #222222;
-                font-family: "Geist", "Inter", "Arial", sans-serif;
+                font-family: "Geist", "Inter", "DejaVu Sans", "Arial", sans-serif;
                 font-size: ${Math.max(desFontSize, 18)}px;
                 font-weight: 500;
                 text-anchor: middle;

@@ -56,15 +56,28 @@ export default function ImageGenerator() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate image");
+        let errorMessage = `Server error (${response.status})`;
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text.slice(0, 100) || errorMessage;
+          }
+        } catch (e) {
+          console.error("Error parsing error response:", e);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       setGeneratedImage(data.generatedImage);
       setFinalImage(data.finalImage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Generation failed:", err);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
