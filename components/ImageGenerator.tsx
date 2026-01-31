@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import ImageUpload from "./ImageUpload";
 import ImagePreview from "./ImagePreview";
 
@@ -110,10 +111,13 @@ export default function ImageGenerator() {
             {uploadedImagePreview ? (
               <div className="space-y-6 text-center">
                 <div className="relative inline-block group">
-                  <img 
+                  <Image 
                     src={uploadedImagePreview} 
                     alt="Preview" 
+                    width={192}
+                    height={192}
                     className="w-48 h-48 object-cover rounded-2xl border-2 border-blue-500/30"
+                    unoptimized
                   />
                   <button 
                     onClick={() => { setSelectedFile(null); setUploadedImagePreview(null); }}
