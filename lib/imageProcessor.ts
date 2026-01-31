@@ -158,12 +158,19 @@ export async function mergeImages(
       .png()
       .toBuffer();
 
-    // Save final image locally
+    // Generate filename
     const timestamp_str = timestamp.toString();
     const outputFilename = `final-${timestamp_str}.png`;
-    const outputPath = join(outputDir, outputFilename);
-    await writeFile(outputPath, finalBuffer);
-    console.log('Final image saved locally:', outputPath);
+
+    // Save final image locally if possible (mandatory for local, optional for prod)
+    try {
+      const outputPath = join(outputDir, outputFilename);
+      await writeFile(outputPath, finalBuffer);
+      console.log('Final image saved locally:', outputPath);
+    } catch (err) {
+      console.warn('Could not save final image locally (likely Vercel read-only FS):', err);
+      // If we're in prod and have blob, this is fine. If not, we might have an issue.
+    }
 
     // Upload to Vercel Blob if token is available
     if (process.env.BLOB_READ_WRITE_TOKEN) {

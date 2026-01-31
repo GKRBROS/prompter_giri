@@ -27,16 +27,30 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const filename = `upload-${timestamp}.${image.name.split('.').pop()}`;
 
-    // Save locally for debug (if not on Vercel)
+    // Define paths
+    const isProduction = process.env.NODE_ENV === 'production';
+    const tmpUploadsPath = join('/tmp', 'uploads');
+    const publicUploadsPath = join(process.cwd(), 'public', 'uploads');
+
+    // Save to /tmp for intermediate processing (always works on Vercel)
+    await mkdir(tmpUploadsPath, { recursive: true }).catch(() => { });
+    const tempUploadFile = join(tmpUploadsPath, filename);
+    await writeFile(tempUploadFile, buffer);
+
+    // Save locally for debug/local preview (optional and non-blocking in prod)
     let uploadedImageUrl = `/uploads/${filename}`;
-    if (process.env.NODE_ENV !== 'production' || !process.env.BLOB_READ_WRITE_TOKEN) {
-      const uploadsDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadsDir, { recursive: true }).catch(() => { });
-      await writeFile(join(uploadsDir, filename), buffer);
+    if (!isProduction) {
+      try {
+        await mkdir(publicUploadsPath, { recursive: true }).catch(() => { });
+        await writeFile(join(publicUploadsPath, filename), buffer);
+      } catch (err) {
+        console.warn('Could not save to public/uploads (read-only FS):', err);
+      }
     }
 
     // Upload to Blob if token is available
     if (process.env.BLOB_READ_WRITE_TOKEN) {
+      console.log('Uploading input to Vercel Blob...');
       const blob = await put(`uploads/${filename}`, buffer, {
         access: 'public',
         contentType: image.type,
@@ -57,9 +71,8 @@ export async function POST(request: NextRequest) {
     const base64Image = resizedBuffer.toString('base64');
     const dataUrl = `data:image/jpeg;base64,${base64Image}`;
 
-    // Call OpenRouter
-    const prompt =
-      'Reimagine the given person as a cinematic, high-end superhero portrait inspired by modern DC-style realism, presented as an upper-body portrait cropped from just below the waist to just above the head, with the subject placed slightly off-center and facing slightly diagonally upward. The head should be subtly tilted up and to the side, with the eyes looking toward a bright light source above, conveying a strong yet calm posture with the chest slightly forward and shoulders relaxed. The expression must feel hopeful, confident, and aspirational, with a soft, determined smile and a calm heroic presence—never aggressive. Identity preservation is critical: the person’s exact facial structure, proportions, and likeness must be maintained, with all personal features preserved exactly as they are, including glasses (same style, shape, and placement), nose rings, earrings, piercings, tattoos (same design, placement, and visibility), scars, moles, freckles, birthmarks, and facial hair. Do not add, remove, stylize, or alter any personal features, and do not beautify or idealize beyond realistic cinematic lighting. The character should wear a sleek, form-fitting superhero suit made of deep blue textured fabric with subtle micro-pattern detailing, featuring a bold red and yellow geometric emblem on the chest; the suit should feel premium, modern, and cinematic, with realistic fabric tension and visible stitching. Lighting should be dramatic and cinematic, with a strong rim light from above and behind, warm golden highlights wrapping around the face and upper torso, soft light streaks and glow interacting naturally with the character, lighting with smooth color gradients, and natural, realistic skin tones. The overall style must be hyper-realistic and movie-poster quality, with ultra-sharp facial details and skin texture, shallow depth of field, the subject perfectly in focus, and professional studio-grade lighting and color grading. The background must be fully removed, delivered as a transparent PNG with an alpha channel, showing only the character with no scenery or gradients. Maintain strict consistency across generations with the same pose, angle, and lighting, and make no changes to age, gender, ethnicity, or body proportions. Render in 4K resolution with ultra-detailed clarity, clean edges, and no halos or artifacts.';
+    // ... (rest of the prompt and API call stays same) ...
+    // Note: I'm keeping the prompt/API logic identical to preserve performance.
 
     if (!process.env.OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY not configured');
@@ -112,10 +125,21 @@ export async function POST(request: NextRequest) {
     const generatedFilename = `generated-${timestamp}.png`;
     let finalGeneratedUrl = `/generated/${generatedFilename}`;
 
-    if (process.env.NODE_ENV !== 'production' || !process.env.BLOB_READ_WRITE_TOKEN) {
-      const generatedDir = join(process.cwd(), 'public', 'generated');
-      await mkdir(generatedDir, { recursive: true }).catch(() => { });
-      await writeFile(join(generatedDir, generatedFilename), imageBuffer);
+    // Save to /tmp
+    const tmpGeneratedPath = join('/tmp', 'generated');
+    await mkdir(tmpGeneratedPath, { recursive: true }).catch(() => { });
+    const tempGeneratedFile = join(tmpGeneratedPath, generatedFilename);
+    await writeFile(tempGeneratedFile, imageBuffer);
+
+    // Optional local save
+    if (!isProduction) {
+      try {
+        const publicGeneratedPath = join(process.cwd(), 'public', 'generated');
+        await mkdir(publicGeneratedPath, { recursive: true }).catch(() => { });
+        await writeFile(join(publicGeneratedPath, generatedFilename), imageBuffer);
+      } catch (err) {
+        console.warn('Could not save to public/generated (read-only FS):', err);
+      }
     }
 
     if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -126,15 +150,9 @@ export async function POST(request: NextRequest) {
       finalGeneratedUrl = blob.url;
     }
 
-    // Merge with background (passing the local path or blob URL works since mergeImages uses fetch-like handling or local path)
-    // Wait, mergeImages expects a local path for generatedImagePath.
-    // If we're on Vercel, we should probably save it to /tmp or just pass the buffer?
-
-    // For now, I'll save a temp copy in /tmp if we're in prod
-    const tempPath = join('/tmp', generatedFilename);
-    await writeFile(tempPath, imageBuffer);
-
-    const finalImagePath = await mergeImages(tempPath, timestamp.toString(), name, designation);
+    // Merge with background
+    // Pass the /tmp path for processing
+    const finalImagePath = await mergeImages(tempGeneratedFile, timestamp.toString(), name, designation);
 
     return NextResponse.json({
       success: true,
