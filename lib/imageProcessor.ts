@@ -130,8 +130,8 @@ export async function mergeImages(
         ? Math.floor(baseDesSize * (maxWidth / desEstimatedWidth))
         : baseDesSize;
 
-      const nameY = Math.floor(canvasHeight * 0.752);
-      const desY = Math.floor(canvasHeight * 0.784);
+      const nameY = Math.floor(canvasHeight * 0.742);
+      const desY = Math.floor(canvasHeight * 0.774);
 
       console.log('Text overlay:', { nameText, desText, nameFontSize, desFontSize, nameY, desY });
 
