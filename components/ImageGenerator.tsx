@@ -98,7 +98,7 @@ export default function ImageGenerator() {
     setCustomPrompt("");
   };
 
-  const isFormValid = name.trim() !== "" && designation.trim() !== "" && selectedFile !== null && customPrompt.trim() !== "";
+  const isFormValid = name.trim() !== "" && designation.trim() !== "" && selectedFile !== null && customPrompt !== "";
 
   return (
     <div className="bg-gray-800/40 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-3xl border border-white/10 transition-all duration-300">
@@ -124,7 +124,8 @@ export default function ImageGenerator() {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
               />
-            </di
+            </div>
+          </div>
 
           <div className="space-y-2 pt-2">
             <label className="text-sm font-medium text-blue-300 uppercase tracking-wider">AI Prompt <span className="text-red-400">*</span></label>
