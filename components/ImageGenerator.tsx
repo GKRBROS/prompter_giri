@@ -8,6 +8,7 @@ import ImagePreview from "./ImagePreview";
 export default function ImageGenerator() {
   const [name, setName] = useState("");
   const [designation, setDesignation] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -38,6 +39,10 @@ export default function ImageGenerator() {
       setError("Please upload an image first");
       return;
     }
+    if (!customPrompt) {
+      setError("Please enter a prompt");
+      return;
+    }
 
     setError(null);
     setLoading(true);
@@ -49,6 +54,7 @@ export default function ImageGenerator() {
       formData.append("image", selectedFile);
       formData.append("name", name);
       formData.append("designation", designation);
+      formData.append("customPrompt", customPrompt);
 
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -89,9 +95,10 @@ export default function ImageGenerator() {
     setGeneratedImage(null);
     setFinalImage(null);
     setError(null);
+    setCustomPrompt("");
   };
 
-  const isFormValid = name.trim() !== "" && designation.trim() !== "" && selectedFile !== null;
+  const isFormValid = name.trim() !== "" && designation.trim() !== "" && selectedFile !== null && customPrompt.trim() !== "";
 
   return (
     <div className="bg-gray-800/40 backdrop-blur-md rounded-3xl p-6 md:p-10 shadow-3xl border border-white/10 transition-all duration-300">
@@ -117,6 +124,22 @@ export default function ImageGenerator() {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
               />
+            </di
+
+          <div className="space-y-2 pt-2">
+            <label className="text-sm font-medium text-blue-300 uppercase tracking-wider">AI Prompt <span className="text-red-400">*</span></label>
+            <p className="text-xs text-gray-400">Enter your custom prompt to describe how the AI should transform the image. Be creative and specific!</p>
+            <textarea
+              placeholder="e.g. Transform this person into a cyberpunk warrior with neon lights and futuristic armor..."
+              className="w-full min-h-[120px] bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+            />
+            <div className="flex justify-between items-center">
+              <p className={`text-xs ${customPrompt ? 'text-green-400/60' : 'text-gray-500'}`}>
+                {customPrompt ? '✓ Prompt ready' : 'Required - Enter a prompt'}
+              </p>
+              <p className="text-xs text-gray-500">{customPrompt.length} characters</p>
             </div>
           </div>
           
